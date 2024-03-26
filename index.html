@@ -22,7 +22,7 @@
         async function loadData() {
             const response = await fetch('data/kanjidists.json');
             const data = await response.json();
-            let chars = {}; // Start with an empty object
+            let chars = {};
             var stateInfo = [];
 
             for (let i = 0; i < data.characters.length; i++) {
@@ -47,7 +47,6 @@
                 return getDistanceByIndex(i1,i2);
             }
 
-            // stateInfo.forEach(point => {point.outer = true; });
             const width = 500;
             const height = 500;
 
@@ -122,26 +121,33 @@
                     var out = 0;
                     
                     for (const [key, coords] of Object.entries(pos_dict)) {
-                        const actual_dist = getDistance(key, name)**2; // These are squared distances.
-                        const euclidean = ((coords[0] - x)**2 + (coords[1] - y)**2) 
+                        const actual_dist = getDistance(key, name); 
+                        const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         
-                        out += (4*actual_dist - euclidean)**2 // The original focusedMDS loss
+                        out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
+                        if (euclidean < 250) {
+                            out += 49999 / euclidean
+                        }
                     }
 
                     return out;
                 }
 
+                function xFromAngle(angle, distance) {
+                    return distance * Math.cos(angle) + width/2
+                }
+                function yFromAngle(angle, distance) {
+                    return distance * Math.sin(angle) + height/2
+                }
                 stateInfo.forEach(point => {
                     if (selected.map(object => object.name).includes(point.name)) {
-                        const distance = getDistance(point.name, pivotPoint.name);
-                        function xFromAngle(theta) {return (distance * Math.cos(theta)) + width/2};
-                        function yFromAngle(theta) {return (distance * Math.sin(theta)) + height/2};
+                        var distance = getDistance(point.name, pivotPoint.name); 
 
                         // Deciding an angle to put the new point at. We just do the most naive search for now... 
                         var min_loss = Infinity;
                         var min_angle = 0;
                         for (var theta = 0; theta < 2*Math.PI; theta += 0.1) {
-                            const l = loss(point.name, theta, xFromAngle(theta), yFromAngle(theta));
+                            const l = loss(point.name, theta, xFromAngle(theta, distance), yFromAngle(theta, distance));
                             
                             if (l < min_loss) {
                                 min_loss = l;
@@ -150,21 +156,27 @@
                         }
                         
                         point.angle = min_angle;
-                        
-                        point.outer = true;
-                        
+                        console.log(min_loss)
                         if (j == 0) point.angle = - Math.PI / 2;
-                        point.x = xFromAngle(point.angle);
-                        point.y = yFromAngle(point.angle);
+
+                        // If the point is newly included, we first set it to a large radius at the correct angle, so that it comes flying in from a sensible direction.
+                        // distance = !point.outer ? 1000 : getDistance(point.name, pivotPoint.name);
+                        point.outer = true;
+
+                        point.x = xFromAngle(point.angle, distance);
+                        point.y = yFromAngle(point.angle, distance);
                         
                         pos_dict[point.name] = [point.x, point.y];
                         j++;
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
-                        point.x = width*2;
-                        point.y = height*2;
+                        point.x = width/2;
+                        point.y = -height;
+                    } else {
+                        point.outer = false;
                     }
                 });
+
                 pivotPoint.outer = false;
                 pivotPoint.x = width/2;
                 pivotPoint.y = height/2;
