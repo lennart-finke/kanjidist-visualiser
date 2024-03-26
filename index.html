@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Scatter Plot</title>
+    <meta charset="UTF-8">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="optimize_for_javascript.js"></script>
+    <script src="focused_mds.js"></script>
+    <style> /* Basic styling */
+        #scatterplot-container {
+            margin: 20px auto;
+            border: 1px solid #fff;
+        }
+    </style>
+</head>
+<body>
+    <div id="scatterplot-container"></div>
+
+    <script>
+        const NUM_NEIGHBORS = 10;
+
+        async function loadData() {
+            const response = await fetch('data/kanjidists.json');
+            const data = await response.json();
+            let chars = {}; // Start with an empty object
+            var stateInfo = [];
+
+            for (let i = 0; i < data.characters.length; i++) {
+                chars[data.characters[i]] = i;
+                stateInfo.push({name:data.characters[i]})
+            }
+        
+            function getDistanceByIndex(i1,i2) {
+                if (i1 > i2) {
+                    const temp = i2;
+                    i2 = i1;
+                    i1 = temp;
+                }
+
+                return 0.35*width*(data.distances[i1][i2-i1-1])/0.25;
+            }
+            
+            function getDistance(a,b) {
+                // We assume a != b
+                const i1 = chars[a];
+                const i2 = chars[b];
+                return getDistanceByIndex(i1,i2);
+            }
+
+            // stateInfo.forEach(point => {point.outer = true; });
+            const width = 500;
+            const height = 500;
+
+            // Basic SVG setup
+            const svg = d3.select("#scatterplot-container")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // Scales for positioning
+            const xScale = d3.scaleLinear()
+                .domain([-width / 2, width / 2]) 
+                .range([0, width]);
+            const yScale = d3.scaleLinear()
+                .domain([-height / 2, height / 2])
+                .range([-height/2, height/2]);
+
+            // Function to calculate positions based on a pivot point
+            function updatePositions(pivotPoint) {
+                const distances = stateInfo
+                .filter(p => p !== pivotPoint) // Exclude the pivot point itself
+                .map(p => ({ ...p, distance: getDistance(p.name, pivotPoint.name)}))
+                .sort((a, b) => a.distance - b.distance); 
+                const selected = distances.slice(0, NUM_NEIGHBORS);
+                
+                /* // Some sample code for a spring force simulation
+                const simulation = d3.forceSimulation(stateInfo).force("hooke", hooke);
+
+                simulation.nodes(stateInfo);
+
+                simulation.on("tick", () => {
+                    updatePlot(stateInfo);
+                });
+
+            
+                // As in https://d3js.org/d3-force/simulation
+                function hooke(alpha) {
+                    const K = 0.001;
+                    
+                    var selectedPoints = stateInfo.filter(p => selected.map(object => object.name).includes(p.name));
+
+                    for (let i = 0, n = stateInfo.length, node, k = alpha * 0.1; i < n; ++i) {
+                        node = stateInfo[i];
+                        if (selected.map(object => object.name).includes(node.name)) {
+                            for (let j = 0; j < selectedPoints.length; ++j) {
+                                var other = selectedPoints[j];
+                                if (other.name == node.name) continue;
+                                
+                                const diff_x = other.x - node.x;
+                                const diff_y = other.y - node.y;
+                                console.log(diff_x)
+                                const dist_euclidean_sq = diff_x * diff_y + diff_y * diff_y;
+                                const dist = getDistance(node.name, other.name);
+                                const displacement = Math.sqrt(dist*dist-dist_euclidean_sq);
+
+                                console.log(K*displacement*(diff_x/Math.abs(diff_x+diff_y)))
+
+                                node.vx += K*displacement*(diff_x/Math.abs(diff_x+diff_y));
+                                node.vy += K*displacement*(diff_y/Math.abs(diff_x+diff_y));
+                            }
+                        }
+                    }
+                }
+                simulation.alpha(0.0001).restart(); // Start (or restart) the simulation
+                */
+
+                var j = 0;
+                var pos_dict = {};
+
+                function loss(name, theta, x, y) {
+                    // As in https://lea-urpa.github.io/focusedMDS.html
+                    var out = 0;
+                    
+                    for (const [key, coords] of Object.entries(pos_dict)) {
+                        const actual_dist = getDistance(key, name)**2; // These are squared distances.
+                        const euclidean = ((coords[0] - x)**2 + (coords[1] - y)**2) 
+                        
+                        out += (4*actual_dist - euclidean)**2 // The original focusedMDS loss
+                    }
+
+                    return out;
+                }
+
+                stateInfo.forEach(point => {
+                    if (selected.map(object => object.name).includes(point.name)) {
+                        const distance = getDistance(point.name, pivotPoint.name);
+                        function xFromAngle(theta) {return (distance * Math.cos(theta)) + width/2};
+                        function yFromAngle(theta) {return (distance * Math.sin(theta)) + height/2};
+
+                        // Deciding an angle to put the new point at. We just do the most naive search for now... 
+                        var min_loss = Infinity;
+                        var min_angle = 0;
+                        for (var theta = 0; theta < 2*Math.PI; theta += 0.1) {
+                            const l = loss(point.name, theta, xFromAngle(theta), yFromAngle(theta));
+                            
+                            if (l < min_loss) {
+                                min_loss = l;
+                                min_angle = theta;
+                            }
+                        }
+                        
+                        point.angle = min_angle;
+                        
+                        point.outer = true;
+                        
+                        if (j == 0) point.angle = - Math.PI / 2;
+                        point.x = xFromAngle(point.angle);
+                        point.y = yFromAngle(point.angle);
+                        
+                        pos_dict[point.name] = [point.x, point.y];
+                        j++;
+                    } else if (point.name != pivotPoint.name) {
+                        point.outer = false;
+                        point.x = width*2;
+                        point.y = height*2;
+                    }
+                });
+                pivotPoint.outer = false;
+                pivotPoint.x = width/2;
+                pivotPoint.y = height/2;
+
+                updatePlot(stateInfo);
+                
+            }
+
+            function updatePlot(data) {
+
+                const circles = svg.selectAll("circle")
+                    .data(data);
+
+                circles.exit().remove();
+
+                circles.enter()
+                    .append("circle")
+                    .attr("fill", "pink") 
+                    .attr("opacity", 0.8)
+                    .attr("stroke", "brown")
+                    .attr("stroke-width", 2)
+                    .merge(circles)
+                    .transition()
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y)
+                    .attr("r", 15);
+
+
+                const textLabels = svg.selectAll("text")
+                    .data(data);
+
+                textLabels.exit().remove(); 
+
+                textLabels.enter()
+                    .append("text")
+                    .text(d => d.name) // Display the kanji
+                    .attr("text-anchor", "middle") // Center text 
+                    .attr("dy", ".35em")
+                    .on("click", updatePositions)
+                    .merge(textLabels) 
+                    .transition()
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            }
+
+            // Initial Setup
+            let currentPivot = stateInfo[0]; 
+            updatePositions(currentPivot);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
