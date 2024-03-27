@@ -14,21 +14,32 @@
     </style>
 </head>
 <body>
-    <div id="scatterplot-container"></div>
-
+    
+    <div style="overflow: hidden;">
+        <div id="scatterplot-container" style="float: left;"></div>
+        <div id="kanji-container" style="float: right;">
+            <iframe id="jisho-frame" src="about:blank" width="400" height="550" ></iframe>
+        </div>
+    </div>
+    
     <script>
         const NUM_NEIGHBORS = 10;
-
-        async function loadData() {
-            const response = await fetch('data/kanjidists.json');
+        const jishoEnabled = false;
+        async function loadData(fileName) {
+            const response = await fetch(fileName);
             const data = await response.json();
             let chars = {};
             var stateInfo = [];
 
-            for (let i = 0; i < data.characters.length; i++) {
-                chars[data.characters[i]] = i;
-                stateInfo.push({name:data.characters[i]})
+            const triangular = data.nearest == null;
+            
+            if (triangular) {
+                for (let i = 0; i < data.characters.length; i++) {
+                    chars[data.characters[i]] = i;
+                    stateInfo.push({name:data.characters[i]})
+                }
             }
+            
         
             function getDistanceByIndex(i1,i2) {
                 if (i1 > i2) {
@@ -42,9 +53,13 @@
             
             function getDistance(a,b) {
                 // We assume a != b
-                const i1 = chars[a];
-                const i2 = chars[b];
-                return getDistanceByIndex(i1,i2);
+                if (triangular) {
+                    const i1 = chars[a];
+                    const i2 = chars[b];
+                    return getDistanceByIndex(i1,i2);
+                } else {
+                    return data.nearest[a][b]
+                }
             }
 
             const width = 500;
@@ -71,6 +86,12 @@
                 .map(p => ({ ...p, distance: getDistance(p.name, pivotPoint.name)}))
                 .sort((a, b) => a.distance - b.distance); 
                 const selected = distances.slice(0, NUM_NEIGHBORS);
+
+                if (jishoEnabled) {
+                    var jishoUrl = "https://jisho.org/search/" + encodeURIComponent(pivotPoint.name + " #kanji");
+                    document.getElementById("jisho-frame").src = jishoUrl;
+                }
+                
                 
                 /* // Some sample code for a spring force simulation
                 const simulation = d3.forceSimulation(stateInfo).force("hooke", hooke);
@@ -156,7 +177,6 @@
                         }
                         
                         point.angle = min_angle;
-                        console.log(min_loss)
                         if (j == 0) point.angle = - Math.PI / 2;
 
                         // If the point is newly included, we first set it to a large radius at the correct angle, so that it comes flying in from a sensible direction.
@@ -227,7 +247,7 @@
             updatePositions(currentPivot);
         }
 
-        loadData();
+        loadData('data/kanjidists.json');
     </script>
 </body>
 </html>
