@@ -4,7 +4,6 @@
     <title>Interactive Scatter Plot</title>
     <meta charset="UTF-8">
     <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="optimize_for_javascript.js"></script>
     <script src="focused_mds.js"></script>
     <style> /* Basic styling */
         #scatterplot-container {
@@ -16,8 +15,12 @@
 <body>
     
     <div style="overflow: hidden;">
-        <div id="scatterplot-container" style="float: left;"></div>
+        <div style="text-align: center; float: left;">
+            <div id="scatterplot-container" style="border: 1px dotted black;"></div>
+        </div>
+
         <div id="kanji-container" style="float: right;">
+            <p>Show Kanji Info: <input type="checkbox" id="showJisho"></p>
             <iframe id="jisho-frame" src="about:blank" width="400" height="550" ></iframe>
         </div>
     </div>
@@ -32,15 +35,19 @@
             var stateInfo = [];
 
             const triangular = data.nearest == null;
-            
+            var inverted = data.inverted ? true : false;
+            const scale = data.scaleBy;
             if (triangular) {
                 for (let i = 0; i < data.characters.length; i++) {
                     chars[data.characters[i]] = i;
                     stateInfo.push({name:data.characters[i]})
                 }
+            } else {
+                for (key in data.nearest) {
+                    stateInfo.push({name:key})
+                }
             }
             
-        
             function getDistanceByIndex(i1,i2) {
                 if (i1 > i2) {
                     const temp = i2;
@@ -48,18 +55,25 @@
                     i1 = temp;
                 }
 
-                return 0.35*width*(data.distances[i1][i2-i1-1])/0.25;
+                return (data.distances[i1][i2-i1-1])/0.25;
             }
             
             function getDistance(a,b) {
                 // We assume a != b
+                var dist;
                 if (triangular) {
                     const i1 = chars[a];
                     const i2 = chars[b];
-                    return getDistanceByIndex(i1,i2);
+                    dist =  getDistanceByIndex(i1,i2);
                 } else {
-                    return data.nearest[a][b]
+                    var dist = data.nearest[a][b];
+                    if (data.nearest[a][b] == undefined) {
+                        dist = data.nearest[b][a];
+                    }
                 }
+                dist = inverted ? 1 - dist : dist;
+                dist *= scale * width;
+                return dist;
             }
 
             const width = 500;
@@ -81,58 +95,23 @@
 
             // Function to calculate positions based on a pivot point
             function updatePositions(pivotPoint) {
-                const distances = stateInfo
-                .filter(p => p !== pivotPoint) // Exclude the pivot point itself
-                .map(p => ({ ...p, distance: getDistance(p.name, pivotPoint.name)}))
-                .sort((a, b) => a.distance - b.distance); 
-                const selected = distances.slice(0, NUM_NEIGHBORS);
+                var selected;
+                var distances;
 
-                if (jishoEnabled) {
+                if (triangular) {
+                    distances = stateInfo
+                    .filter(p => p !== pivotPoint) // Exclude the pivot point itself
+                    .map(p => ({ ...p, distance: getDistance(p.name, pivotPoint.name)}))
+                    .sort((a, b) => a.distance - b.distance); 
+                    selected = distances.slice(0, NUM_NEIGHBORS).map(object => object.name);
+                } else {
+                    selected = Object.keys(data.nearest[pivotPoint.name]);
+                }
+
+                if (document.getElementById("showJisho").checked) { // Displaying additional information in an iframe
                     var jishoUrl = "https://jisho.org/search/" + encodeURIComponent(pivotPoint.name + " #kanji");
                     document.getElementById("jisho-frame").src = jishoUrl;
                 }
-                
-                
-                /* // Some sample code for a spring force simulation
-                const simulation = d3.forceSimulation(stateInfo).force("hooke", hooke);
-
-                simulation.nodes(stateInfo);
-
-                simulation.on("tick", () => {
-                    updatePlot(stateInfo);
-                });
-
-            
-                // As in https://d3js.org/d3-force/simulation
-                function hooke(alpha) {
-                    const K = 0.001;
-                    
-                    var selectedPoints = stateInfo.filter(p => selected.map(object => object.name).includes(p.name));
-
-                    for (let i = 0, n = stateInfo.length, node, k = alpha * 0.1; i < n; ++i) {
-                        node = stateInfo[i];
-                        if (selected.map(object => object.name).includes(node.name)) {
-                            for (let j = 0; j < selectedPoints.length; ++j) {
-                                var other = selectedPoints[j];
-                                if (other.name == node.name) continue;
-                                
-                                const diff_x = other.x - node.x;
-                                const diff_y = other.y - node.y;
-                                console.log(diff_x)
-                                const dist_euclidean_sq = diff_x * diff_y + diff_y * diff_y;
-                                const dist = getDistance(node.name, other.name);
-                                const displacement = Math.sqrt(dist*dist-dist_euclidean_sq);
-
-                                console.log(K*displacement*(diff_x/Math.abs(diff_x+diff_y)))
-
-                                node.vx += K*displacement*(diff_x/Math.abs(diff_x+diff_y));
-                                node.vy += K*displacement*(diff_y/Math.abs(diff_x+diff_y));
-                            }
-                        }
-                    }
-                }
-                simulation.alpha(0.0001).restart(); // Start (or restart) the simulation
-                */
 
                 var j = 0;
                 var pos_dict = {};
@@ -142,7 +121,13 @@
                     var out = 0;
                     
                     for (const [key, coords] of Object.entries(pos_dict)) {
-                        const actual_dist = getDistance(key, name); 
+                        var actual_dist = getDistance(key, name);
+                        
+                        // If a distance value is not recorded in the nearest neighbors, we set it to a large value.
+                        if (!(actual_dist > 0)) { 
+                            actual_dist = width*0.67;
+                        }
+
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
@@ -150,7 +135,7 @@
                             out += 49999 / euclidean
                         }
                     }
-
+                    if (out == 0) {return Infinity}
                     return out;
                 }
 
@@ -160,13 +145,15 @@
                 function yFromAngle(angle, distance) {
                     return distance * Math.sin(angle) + height/2
                 }
-                stateInfo.forEach(point => {
-                    if (selected.map(object => object.name).includes(point.name)) {
-                        var distance = getDistance(point.name, pivotPoint.name); 
 
+                stateInfo.forEach(point => {
+                    if (selected.includes(point.name)) {
+
+                        var distance = getDistance(point.name, pivotPoint.name);
                         // Deciding an angle to put the new point at. We just do the most naive search for now... 
                         var min_loss = Infinity;
-                        var min_angle = 0;
+                        var min_angle = 2*Math.PI*Math.random();
+
                         for (var theta = 0; theta < 2*Math.PI; theta += 0.1) {
                             const l = loss(point.name, theta, xFromAngle(theta, distance), yFromAngle(theta, distance));
                             
@@ -176,13 +163,14 @@
                             }
                         }
                         
-                        point.angle = min_angle;
-                        if (j == 0) point.angle = - Math.PI / 2;
+                        if (j != 0 || point.angle == undefined) {
+                            point.angle = min_angle;
+                        }
 
                         // If the point is newly included, we first set it to a large radius at the correct angle, so that it comes flying in from a sensible direction.
                         // distance = !point.outer ? 1000 : getDistance(point.name, pivotPoint.name);
                         point.outer = true;
-
+                        point.distance = distance;
                         point.x = xFromAngle(point.angle, distance);
                         point.y = yFromAngle(point.angle, distance);
                         
@@ -194,6 +182,7 @@
                         point.y = -height;
                     } else {
                         point.outer = false;
+                        point.distance = 0;
                     }
                 });
 
@@ -206,22 +195,25 @@
             }
 
             function updatePlot(data) {
-
                 const circles = svg.selectAll("circle")
                     .data(data);
 
                 circles.exit().remove();
 
+                const colorScale = d3.scaleLinear()
+                .domain([0.3, 1]) 
+                .range(["#a40", "#fa5"]); // Gradient from red to white
+
                 circles.enter()
                     .append("circle")
-                    .attr("fill", "pink") 
                     .attr("opacity", 0.8)
-                    .attr("stroke", "brown")
+                    .attr("stroke", "#a40")
                     .attr("stroke-width", 2)
                     .merge(circles)
                     .transition()
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
+                    .attr("fill", d => colorScale(2*d.distance/width))
                     .attr("r", 15);
 
 
@@ -239,15 +231,20 @@
                     .merge(textLabels) 
                     .transition()
                     .attr("x", d => d.x)
-                    .attr("y", d => d.y);
+                    .attr("y", d => d.y)
+                    .attr("fill", "white")
+                    .attr("opacity", d => 1.25-d.distance/width);
+
             }
 
             // Initial Setup
             let currentPivot = stateInfo[0]; 
             updatePositions(currentPivot);
+
+            
         }
 
-        loadData('data/kanjidists.json');
+        loadData('data/dstrokedit.json');
     </script>
 </body>
 </html>
