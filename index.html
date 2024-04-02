@@ -81,7 +81,7 @@
                     }
                 }
                 dist = inverted ? 1 - dist : dist;
-                dist *= scale * width;
+                dist *= 0.85 * scale * width;
                 return dist;
             }
 
@@ -138,7 +138,7 @@
                         if (!(actual_dist > 0)) { 
                             actual_dist = width*0.67;
                         } else if (addLinks) {
-                            linkData.push({"source": point, "target": point_dict[key]});
+                            linkData.push({"source": point, "target": point_dict[key], "dist": actual_dist});
                         }
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
@@ -190,7 +190,7 @@
                         pos_dict[point.name] = [point.x, point.y];
                         point_dict[point.name] = point;
                         j++;
-                        linkData.push({"source": point, "target": pivotPoint});
+                        linkData.push({"source": point, "target": pivotPoint, "dist": point.distance});
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
@@ -223,10 +223,14 @@
                 .data(linkData);
                 links.exit().remove();
 
+                const grayScale = d3.scaleLinear()
+                .domain([0, 1])
+                .range(["#000", "#ccc"]); // Gradient from black to light gray
+
                 links.enter()
                 .append("line")
-                .style("stroke", "#ccc")
-                .style("stroke-width", 1);
+                .style("stroke", d => grayScale(2*d.dist/width))
+                .style("stroke-width", d => 5-10*d.dist/width);
                 links.transition()
                 .duration(1000)
                 .attr("x1", d => d.source.x)
@@ -236,7 +240,7 @@
 
 
                 const colorScale = d3.scaleLinear()
-                .domain([0.3, 1]) 
+                .domain([0.3, 1])
                 .range(["#a40", "#fa5"]); // Gradient from red to white
 
                 circles.enter()
