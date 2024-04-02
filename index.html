@@ -7,7 +7,7 @@
     <script src="focused_mds.js"></script>
     <style> /* Basic styling */
         #scatterplot-container {
-            margin: 20px auto;
+            margin: 0px auto;
             border: 1px solid #fff;
         }
     </style>
@@ -17,16 +17,17 @@
     <div style="overflow: hidden;">
         <div style="text-align: center; float: left;">
             <div id="scatterplot-container" style="border: 1px dotted black;"></div>
+            <p>Map based on <span id="knum"></span> kanji<br> (reload to center at random position)</p>
         </div>
 
         <div id="kanji-container" style="float: right;">
-            <p>Show Kanji Info from <select name="Dictionary" id="dictSelect">
+             <iframe id="jisho-frame" src="about:blank" width="450" height="600"></iframe>
+             <p>Show kanji info from <select name="Dictionary" id="dictSelect">
                 <option value="jisho.org">jisho.org</option>
                 <option value="jotoba.de">jotoba.de</option>
             </select>: <input type="checkbox" id="showJisho"> 
                 
             </p>
-            <iframe id="jisho-frame" src="about:blank" width="400" height="550" ></iframe>
         </div>
     </div>
     
@@ -84,8 +85,8 @@
                 return dist;
             }
 
-            const width = 500;
-            const height = 500;
+            const width = 600;
+            const height = 600;
 
             // Basic SVG setup
             const svg = d3.select("#scatterplot-container")
@@ -278,7 +279,8 @@
             }
 
             // Initial Setup
-            let currentPivot = stateInfo[0]; 
+            let currentPivot = stateInfo[Math.floor(Math.random() * stateInfo.length)];
+            document.getElementById("knum").innerHTML = stateInfo.length;
             updatePositions(currentPivot);
         }
 
