@@ -20,7 +20,12 @@
         </div>
 
         <div id="kanji-container" style="float: right;">
-            <p>Show Kanji Info: <input type="checkbox" id="showJisho"></p>
+            <p>Show Kanji Info from <select name="Dictionary" id="dictSelect">
+                <option value="jisho.org">jisho.org</option>
+                <option value="jotoba.de">jotoba.de</option>
+            </select>: <input type="checkbox" id="showJisho"> 
+                
+            </p>
             <iframe id="jisho-frame" src="about:blank" width="400" height="550" ></iframe>
         </div>
     </div>
@@ -28,6 +33,9 @@
     <script>
         const NUM_NEIGHBORS = 10;
         const jishoEnabled = false;
+        const URLs = {"jotoba.de": ["https://jotoba.de/search/1/", "l=en-US"], "jisho.org": ["https://jisho.org/search/", " #kanji"]}
+        const dictSelect = document.getElementById("dictSelect");
+
         async function loadData(fileName) {
             const response = await fetch(fileName);
             const data = await response.json();
@@ -109,16 +117,18 @@
                 }
 
                 if (document.getElementById("showJisho").checked) { // Displaying additional information in an iframe
-                    var jishoUrl = "https://jisho.org/search/" + encodeURIComponent(pivotPoint.name + " #kanji");
-                    document.getElementById("jisho-frame").src = jishoUrl;
+                    var hyperlink = URLs[dictSelect.value][0] + encodeURIComponent(pivotPoint.name + URLs[dictSelect.value][1]);
+                    console.log(hyperlink)
+                    document.getElementById("jisho-frame").src = hyperlink;
                 }
 
                 var j = 0;
                 var pos_dict = {};
-
-                function loss(name, theta, x, y) {
+                var point_dict = {};
+                function loss(point, theta, x, y, addLinks = false) {
                     // As in https://lea-urpa.github.io/focusedMDS.html
                     var out = 0;
+                    const name = point.name;
                     
                     for (const [key, coords] of Object.entries(pos_dict)) {
                         var actual_dist = getDistance(key, name);
@@ -126,10 +136,10 @@
                         // If a distance value is not recorded in the nearest neighbors, we set it to a large value.
                         if (!(actual_dist > 0)) { 
                             actual_dist = width*0.67;
+                        } else if (addLinks) {
+                            linkData.push({"source": point, "target": point_dict[key]});
                         }
-
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
-                        
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
                         if (euclidean < 250) {
                             out += 49999 / euclidean
@@ -146,6 +156,8 @@
                     return distance * Math.sin(angle) + height/2
                 }
 
+                var display = [];
+                var linkData = [];
                 stateInfo.forEach(point => {
                     if (selected.includes(point.name)) {
 
@@ -155,7 +167,7 @@
                         var min_angle = 2*Math.PI*Math.random();
 
                         for (var theta = 0; theta < 2*Math.PI; theta += 0.1) {
-                            const l = loss(point.name, theta, xFromAngle(theta, distance), yFromAngle(theta, distance));
+                            const l = loss(point, theta, xFromAngle(theta, distance), yFromAngle(theta, distance), theta == 0);
                             
                             if (l < min_loss) {
                                 min_loss = l;
@@ -175,13 +187,16 @@
                         point.y = yFromAngle(point.angle, distance);
                         
                         pos_dict[point.name] = [point.x, point.y];
+                        point_dict[point.name] = point;
                         j++;
+                        linkData.push({"source": point, "target": pivotPoint});
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
                         point.y = -height;
                     } else {
                         point.outer = false;
+                        display.push(point);
                         point.distance = 0;
                     }
                 });
@@ -190,15 +205,34 @@
                 pivotPoint.x = width/2;
                 pivotPoint.y = height/2;
 
-                updatePlot(stateInfo);
+                updatePlot(stateInfo, linkData);
                 
             }
 
-            function updatePlot(data) {
-                const circles = svg.selectAll("circle")
-                    .data(data);
+            function updatePlot(pointData, linkData) {
+                svg.append("g").attr("id", "links")
+                svg.append("g").attr("id", "nodes")
+
+                const circles = svg.select("#nodes").selectAll("circle")
+                    .data(pointData);
 
                 circles.exit().remove();
+                
+                const links = svg.select("#links").selectAll("line")
+                .data(linkData);
+                links.exit().remove();
+
+                links.enter()
+                .append("line")
+                .style("stroke", "#ccc")
+                .style("stroke-width", 1);
+                links.transition()
+                .duration(1000)
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y) 
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
 
                 const colorScale = d3.scaleLinear()
                 .domain([0.3, 1]) 
@@ -211,14 +245,17 @@
                     .attr("stroke-width", 2)
                     .merge(circles)
                     .transition()
+                    .duration(1000)
+                    .attr("cx", d => d.x*2)
+                    .attr("cy", d => d.y*2)
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
                     .attr("fill", d => colorScale(2*d.distance/width))
                     .attr("r", 15);
 
 
-                const textLabels = svg.selectAll("text")
-                    .data(data);
+                const textLabels = svg.select("#nodes").selectAll("text")
+                    .data(pointData);
 
                 textLabels.exit().remove(); 
 
@@ -230,18 +267,19 @@
                     .on("click", updatePositions)
                     .merge(textLabels) 
                     .transition()
+                    .duration(1000)
                     .attr("x", d => d.x)
                     .attr("y", d => d.y)
                     .attr("fill", "white")
                     .attr("opacity", d => 1.25-d.distance/width);
 
+                
+                
             }
 
             // Initial Setup
             let currentPivot = stateInfo[0]; 
             updatePositions(currentPivot);
-
-            
         }
 
         loadData('data/dstrokedit.json');
