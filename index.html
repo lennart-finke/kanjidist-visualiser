@@ -7,7 +7,7 @@
     <script src="focused_mds.js"></script>
     <style> /* Basic styling */
         #scatterplot-container {
-            margin: 20px auto;
+            margin: 0px auto;
             border: 1px solid #fff;
         }
     </style>
@@ -17,16 +17,17 @@
     <div style="overflow: hidden;">
         <div style="text-align: center; float: left;">
             <div id="scatterplot-container" style="border: 1px dotted black;"></div>
+            <p>Map based on <span id="knum"></span> kanji<br> (reload to center at random position)</p>
         </div>
 
         <div id="kanji-container" style="float: right;">
-            <p>Show Kanji Info from <select name="Dictionary" id="dictSelect">
+             <iframe id="jisho-frame" src="about:blank" width="450" height="600"></iframe>
+             <p>Show kanji info from <select name="Dictionary" id="dictSelect">
                 <option value="jisho.org">jisho.org</option>
                 <option value="jotoba.de">jotoba.de</option>
             </select>: <input type="checkbox" id="showJisho"> 
                 
             </p>
-            <iframe id="jisho-frame" src="about:blank" width="400" height="550" ></iframe>
         </div>
     </div>
     
@@ -80,12 +81,12 @@
                     }
                 }
                 dist = inverted ? 1 - dist : dist;
-                dist *= scale * width;
+                dist *= 0.85 * scale * width;
                 return dist;
             }
 
-            const width = 500;
-            const height = 500;
+            const width = 600;
+            const height = 600;
 
             // Basic SVG setup
             const svg = d3.select("#scatterplot-container")
@@ -137,7 +138,7 @@
                         if (!(actual_dist > 0)) { 
                             actual_dist = width*0.67;
                         } else if (addLinks) {
-                            linkData.push({"source": point, "target": point_dict[key]});
+                            linkData.push({"source": point, "target": point_dict[key], "dist": actual_dist});
                         }
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
@@ -189,7 +190,7 @@
                         pos_dict[point.name] = [point.x, point.y];
                         point_dict[point.name] = point;
                         j++;
-                        linkData.push({"source": point, "target": pivotPoint});
+                        linkData.push({"source": point, "target": pivotPoint, "dist": point.distance});
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
@@ -222,10 +223,14 @@
                 .data(linkData);
                 links.exit().remove();
 
+                const grayScale = d3.scaleLinear()
+                .domain([0, 1])
+                .range(["#000", "#ccc"]); // Gradient from black to light gray
+
                 links.enter()
                 .append("line")
-                .style("stroke", "#ccc")
-                .style("stroke-width", 1);
+                .style("stroke", d => grayScale(2*d.dist/width))
+                .style("stroke-width", d => 5-10*d.dist/width);
                 links.transition()
                 .duration(1000)
                 .attr("x1", d => d.source.x)
@@ -235,7 +240,7 @@
 
 
                 const colorScale = d3.scaleLinear()
-                .domain([0.3, 1]) 
+                .domain([0.3, 1])
                 .range(["#a40", "#fa5"]); // Gradient from red to white
 
                 circles.enter()
@@ -278,7 +283,8 @@
             }
 
             // Initial Setup
-            let currentPivot = stateInfo[0]; 
+            let currentPivot = stateInfo[Math.floor(Math.random() * stateInfo.length)];
+            document.getElementById("knum").innerHTML = stateInfo.length;
             updatePositions(currentPivot);
         }
 
