@@ -52,8 +52,11 @@
                     stateInfo.push({name:data.characters[i]})
                 }
             } else {
+                var k = 0;
                 for (key in data.nearest) {
-                    stateInfo.push({name:key})
+                    stateInfo.push({name:key});
+                    chars[key] = k;
+                    k += 1
                 }
             }
             
@@ -83,6 +86,10 @@
                 dist = inverted ? 1 - dist : dist;
                 dist *= 0.85 * scale * width;
                 return dist;
+            }
+
+            function kanjiPairHash(k1,k2) {
+                return chars[k1.name] * chars[k2.name] // Todo: replace with primes
             }
 
             const width = 600;
@@ -138,7 +145,7 @@
                         if (!(actual_dist > 0)) { 
                             actual_dist = width*0.67;
                         } else if (addLinks) {
-                            linkData.push({"source": point, "target": point_dict[key], "dist": actual_dist});
+                            linkData.push({"source": point, "target": point_dict[key], "dist": actual_dist, "id": kanjiPairHash(point, point_dict[key])});
                         }
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
@@ -190,7 +197,7 @@
                         pos_dict[point.name] = [point.x, point.y];
                         point_dict[point.name] = point;
                         j++;
-                        linkData.push({"source": point, "target": pivotPoint, "dist": point.distance});
+                        linkData.push({"source": point, "target": pivotPoint, "dist": point.distance, "id": kanjiPairHash(point, pivotPoint)});
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
@@ -211,37 +218,52 @@
             }
 
             function updatePlot(pointData, linkData) {
-                svg.append("g").attr("id", "links")
-                svg.append("g").attr("id", "nodes")
-
-                const circles = svg.select("#nodes").selectAll("circle")
-                    .data(pointData);
-
-                circles.exit().remove();
-                
-                const links = svg.select("#links").selectAll("line")
-                .data(linkData);
-                links.exit().remove();
-
                 const grayScale = d3.scaleLinear()
                 .domain([0, 1])
                 .range(["#000", "#ccc"]); // Gradient from black to light gray
 
-                links.enter()
-                .append("line")
-                .style("stroke", d => grayScale(2*d.dist/width))
-                .style("stroke-width", d => 5-10*d.dist/width);
-                links.transition()
-                .duration(1000)
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y) 
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
-
-
                 const colorScale = d3.scaleLinear()
                 .domain([0.3, 1])
                 .range(["#a40", "#fa5"]); // Gradient from red to white
+
+                svg.append("g").attr("id", "links")
+                svg.append("g").attr("id", "nodes")
+
+                const circles = svg.select("#nodes").selectAll("circle")
+                    .data(pointData, d => d.name);
+
+                circles.exit().remove();
+                
+                const links = svg.select("#links").selectAll("line")
+                .data(linkData, d => d.id).join(
+                    function(enter) {
+                    return enter.append("line")
+                            .style("stroke", d => grayScale(2*d.dist/width))
+                            .style("stroke-width", d => 5-10*d.dist/width)
+                            .attr("opacity", 0)
+                            .transition()
+                            .duration(1000)
+                            .attr("x1", d => d.source.x)
+                            .attr("y1", d => d.source.y) 
+                            .attr("x2", d => d.target.x)
+                            .attr("y2", d => d.target.y)
+                            .attr("opacity", 0)
+                            .transition()
+                            .duration(500)
+                            .attr("opacity", 1);
+                    },
+                    function(update) {
+                        update.transition()
+                                .duration(1000)
+                                .attr("x1", d => d.source.x)
+                                .attr("y1", d => d.source.y) 
+                                .attr("x2", d => d.target.x)
+                                .attr("y2", d => d.target.y);
+                    },
+                    function(exit) {
+                    return exit.remove();
+                    }
+                );
 
                 circles.enter()
                     .append("circle")
