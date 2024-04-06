@@ -88,10 +88,10 @@
                 return dist;
             }
 
-            function kanjiPairHash(k1, k2) {
-                let sortedPair = [k1.name, k2.name].sort();
-                return sortedPair[0] + "-" + sortedPair[1];
-            }
+            // function kanjiPairHash(k1, k2) {
+            //     let sortedPair = [k1.name, k2.name].sort();
+            //     return sortedPair[0] + "-" + sortedPair[1];
+            // }
 
             const width = 600;
             const height = 600;
@@ -147,7 +147,7 @@
                             actual_dist = width*0.67;
                         } else if (addLinks) {
                             const [p, q] = point.name < point_dict[key].name ? [point, point_dict[key]] : [point_dict[key], point];
-                            linkData.push({"source": p, "target": q, "dist": actual_dist, "id": kanjiPairHash(point, point_dict[key])});
+                            linkData.push({"source": p, "target": q, "dist": actual_dist, "id": p.name + "-" + q.name});
                         }
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
@@ -200,7 +200,7 @@
                         point_dict[point.name] = point;
                         j++;
                         const [p, q] = point.name < pivotPoint.name ? [point, pivotPoint] : [pivotPoint, point];
-                        linkData.push({"source": p, "target": q, "dist": point.distance, "id": kanjiPairHash(point, pivotPoint)});
+                        linkData.push({"source": p, "target": q, "dist": point.distance, "id": p.name + "-" + q.name});
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
@@ -249,9 +249,11 @@
                     .style("stroke-width", d => 5 - 12 * d.dist / width)
                     .attr("opacity", 0);                
 
-                // Update + enter
+                // Updating links
                 enteringLinks.merge(links)
-                    .each(function(d) { // Log current values before starting the transition
+                    .each(function(d) { // Log values before starting the transition: These are the values where the edges *go*
+                                        // (source and target are the ordered endpoints of the edges,
+                                        // has nothing to do with source and target of the transition)
                         console.log(`Edges after transition: id ${d.id}, source (${d.source.x}, ${d.source.y}), target (${d.target.x}, ${d.target.y})`);
                     })
                     .transition()
