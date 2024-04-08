@@ -193,6 +193,8 @@
                         // distance = !point.outer ? 1000 : getDistance(point.name, pivotPoint.name);
                         point.outer = true;
                         point.distance = distance;
+                        point.prevX = point.x;
+                        point.prevY = point.y;
                         point.x = xFromAngle(point.angle, distance);
                         point.y = yFromAngle(point.angle, distance);
                         
@@ -201,22 +203,25 @@
                         j++;
                         const [p, q] = point.name < pivotPoint.name ? [point, pivotPoint] : [pivotPoint, point];
                         linkData.push({"source": p, "target": q, "dist": point.distance, "id": p.name + "-" + q.name});
+                        display.push(point);
                     } else if (point.name != pivotPoint.name) {
                         point.outer = false;
                         point.x = width/2;
                         point.y = -height;
                     } else {
                         point.outer = false;
-                        display.push(point);
                         point.distance = 0;
+                        display.push(point);
                     }
                 });
+
+
 
                 pivotPoint.outer = false;
                 pivotPoint.x = width/2;
                 pivotPoint.y = height/2;
 
-                updatePlot(stateInfo, linkData);
+                updatePlot(display, linkData);
                 
             }
 
@@ -234,20 +239,23 @@
 
                 const circles = svg.select("#nodes").selectAll("circle")
                     .data(pointData, d => d.name);
-
-                circles.exit().remove();
                 
                 const links = svg.select("#links").selectAll("line")
                     .data(linkData, d => d.id);
 
                 // Exiting links
-                links.exit().transition().duration(500).style("opacity", 0).remove();   
+                links.exit().transition().duration(500).style("opacity", 0).remove();
 
                 // Entering links
-                const enteringLinks = links.enter().append("line")
+                const enteringLinks = links.enter()
+                    .append("line")
                     .style("stroke", d => grayScale(1.8 * d.dist / width))
                     .style("stroke-width", d => 5 - 12 * d.dist / width)
-                    .attr("opacity", 0);                
+                    .attr("opacity", 0)
+                    .attr("x1", d => d.source.x) 
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.source.x)
+                    .attr("y2", d => d.source.y);                
 
                 // Updating links
                 enteringLinks.merge(links)
@@ -262,47 +270,54 @@
                     .attr("y1", d => d.source.y)
                     .attr("x2", d => d.target.x)
                     .attr("y2", d => d.target.y)
+                    .transition()
+                    .duration(500)
                     .attr("opacity", 1);
 
                     console.log(`eol`);
     
-                circles.enter()
+                const enteringCircles = circles.enter()
                     .append("circle")
-                    .attr("opacity", 0.8)
+                    .attr("opacity", 0)
                     .attr("stroke", "#a40")
                     .attr("stroke-width", 2)
-                    .merge(circles)
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                enteringCircles.merge(circles)
                     .transition()
                     .duration(1000)
-                    .attr("cx", d => d.x*2)
-                    .attr("cy", d => d.y*2)
+                    .attr("opacity", 1)
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
                     .attr("fill", d => colorScale(2*d.distance/width))
                     .attr("r", 15);
-
+                
+                // Exiting Points
+                circles.exit().transition().duration(500).style("opacity", 0).remove();
 
                 const textLabels = svg.select("#nodes").selectAll("text")
-                    .data(pointData);
+                    .data(pointData, d => d.name);
 
-                textLabels.exit().remove(); 
-
-                textLabels.enter()
+                const enteringText = textLabels.enter()
                     .append("text")
                     .text(d => d.name) // Display the kanji
                     .attr("text-anchor", "middle") // Center text 
                     .attr("dy", ".35em")
                     .on("click", updatePositions)
-                    .merge(textLabels) 
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+                
+                enteringText.merge(textLabels) 
                     .transition()
                     .duration(1000)
                     .attr("x", d => d.x)
                     .attr("y", d => d.y)
                     .attr("fill", "white")
                     .attr("opacity", d => 1.25-d.distance/width);
+                // Exiting Text
+                textLabels.exit().transition().duration(500).style("opacity", 0).remove();
 
-                
-                
             }
 
             // Initial Setup
