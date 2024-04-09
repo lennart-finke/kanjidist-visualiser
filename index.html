@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Interactive Scatter Plot</title>
+    <title>Kanji Distance Map</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+</head>
     <script src="focused_mds.js"></script>
     <style> /* Basic styling */
         #scatterplot-container {
@@ -13,23 +16,50 @@
     </style>
 </head>
 <body>
-    
-    <div style="overflow: hidden;">
-        <div style="text-align: center; float: left;">
-            <div id="scatterplot-container" style="border: 1px dotted black;"></div>
-            <p>Map based on <span id="knum"></span> kanji<br> (reload to center at random position)</p>
-        </div>
+    <section class="section">
+        <div class="container">
+            
+            <h1 class="title">Kanji Distances, Visualised</h1>
 
-        <div id="kanji-container" style="float: right;">
-             <iframe id="jisho-frame" src="about:blank" width="450" height="600"></iframe>
-             <p>Show kanji info from <select name="Dictionary" id="dictSelect">
-                <option value="jisho.org">jisho.org</option>
-                <option value="jotoba.de">jotoba.de</option>
-            </select>: <input type="checkbox" id="showJisho"> 
-                
-            </p>
+            <div class="box">
+                <div class="columns">
+                    <div class="column is-two-thirds">
+                        <div id="scatterplot-container" ></div>
+                    </div>
+                    <div class="column is-one-third">
+                        <b class="bold is-s5">
+                            What is this?
+                        </b>
+                        <p>A map based on <span id="knum"></span> Japanese kanji characters reflecting the similarity between them. Reload the page to center the map at a random character.</p></p>
+                        <div id="kanji-container" class="column is-narrow">
+                            <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
+                       </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div>
+                    <p>Show kanji info from <select name="Dictionary" id="dictSelect">
+                        <option value="jisho.org">jisho.org</option>
+                        <option value="jotoba.de">jotoba.de</option>
+                    </select>: <input type="checkbox" id="showJisho"> </p>
+            </div>
         </div>
-    </div>
+      </section>
+      <footer class="footer">
+        <div class="content has-text-centered">
+          <p>
+            This website is brought to you by the <a href="http://www.stochastik.math.uni-goettingen.de/index.php?id=182&language=en">Spatial Stochastics</a> group at the <a href="https://www.uni-goettingen.de/en/1.html">University of Göttingen</a>. <br>
+            It uses <a href="https://github.com/d3/d3">d3.js</a>, licensed under <a href="https://www.isc.org/licenses/">ISC</a>, and <a href="https://github.com/jgthms/bulma">Bulma</a>, licensed under
+            <a href="http://opensource.org/licenses/mit-license.php">MIT</a>. The
+            website content is licensed under 
+            <a href="about:blank"
+              >????</a>.
+          </p>
+        </div>
+      </footer>
+    
     
     <script>
         const NUM_NEIGHBORS = 10;
@@ -93,7 +123,7 @@
             //     return sortedPair[0] + "-" + sortedPair[1];
             // }
 
-            const width = 600;
+            const width = 520;
             const height = 600;
 
             // Basic SVG setup
@@ -125,7 +155,9 @@
                     selected = Object.keys(data.nearest[pivotPoint.name]);
                 }
 
-                if (document.getElementById("showJisho").checked) { // Displaying additional information in an iframe
+                const showDictionary = document.getElementById("showJisho").checked;
+                document.getElementById("jisho-frame").style.display = showDictionary ? "inline" : "none";
+                if (showDictionary) { // Displaying additional information in an iframe
                     var hyperlink = URLs[dictSelect.value][0] + encodeURIComponent(pivotPoint.name + URLs[dictSelect.value][1]);
                     console.log(hyperlink)
                     document.getElementById("jisho-frame").src = hyperlink;
