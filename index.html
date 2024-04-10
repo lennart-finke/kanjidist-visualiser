@@ -19,32 +19,47 @@
     <section class="section">
         <div class="container">
             
-            <h1 class="title">Kanji Distances, Visualised</h1>
+            <h1 class="title">The Jōyō Kanji Map | 地図で分かる常用漢字  </h1>
 
             <div class="box">
-                <div class="columns">
-                    <div class="column is-two-thirds">
-                        <div id="scatterplot-container" ></div>
+                <div  class="columns is-centered">
+                    <div id="kanjiplot-container column">
+                        <svg id="kanjiplot"></svg>
                     </div>
-                    <div class="column is-one-third">
-                        <b class="bold is-s5">
-                            What is this?
-                        </b>
-                        <p>A map based on <span id="knum"></span> Japanese kanji characters reflecting the similarity between them. Reload the page to center the map at a random character.</p></p>
+                </div>
+                <div class="columns is-centered">
+                    <div class="column is-half">
+                        <h5 class="subtitle is-h5">
+                            What is this? 🗺️
+                        </h5>
+                        <p>It's an interactive way to arrange <span id="knum"></span> of the most common Japanese ideographic characters, called kanji, and highlight their structure. At the center, we can see the kanji we are focusing on. On the periphery, we can see its closest neighbors at a certain distance reflecting the similarity between them and the centered kanji. The peripheral kanji are also arranged roughly by how similar they are amongst themselves, with strong similarity being indicated by thicker lines. </p>
                         <div id="kanji-container" class="column is-narrow">
                             <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
                        </div>
                     </div>
+                    <div class="column is-half">
+                        <b> Controls</b>
+                        <p>
+                            <button id="randomButton" class="button">Jump to a Random Kanji!</button>
+                        <button id="navigateButton" class="button">Jump to the kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
+                        </p>
+                        <p>
+                            Select a Map:
+                            <select name="Dataset Selection" id="datasetSelection">
+                                <option value="dstrokedit.json">Stroke Edit Distance</option>
+                                <option value="dbagofradicals.json">Bag-of-Radicals Distance</option>
+                            </select>
+                        </p>
+                        <p>Show kanji info from 
+                            <select name="Dictionary" id="dictSelect">
+                            <option value="jisho.org">jisho.org</option>
+                            <option value="jotoba.de">jotoba.de</option>
+                            </select>: <input type="checkbox" id="showJisho">
+                        </p>
+                    </div>
                 </div>
             </div>
-            
-            
-            <div>
-                    <p>Show kanji info from <select name="Dictionary" id="dictSelect">
-                        <option value="jisho.org">jisho.org</option>
-                        <option value="jotoba.de">jotoba.de</option>
-                    </select>: <input type="checkbox" id="showJisho"> </p>
-            </div>
+
         </div>
       </section>
       <footer class="footer">
@@ -52,10 +67,8 @@
           <p>
             This website is brought to you by the <a href="http://www.stochastik.math.uni-goettingen.de/index.php?id=182&language=en">Spatial Stochastics</a> group at the <a href="https://www.uni-goettingen.de/en/1.html">University of Göttingen</a>. <br>
             It uses <a href="https://github.com/d3/d3">d3.js</a>, licensed under <a href="https://www.isc.org/licenses/">ISC</a>, and <a href="https://github.com/jgthms/bulma">Bulma</a>, licensed under
-            <a href="http://opensource.org/licenses/mit-license.php">MIT</a>. The
-            website content is licensed under 
-            <a href="about:blank"
-              >????</a>.
+            <a href="http://opensource.org/licenses/mit-license.php">MIT</a>. 
+            The website content is licensed under <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
           </p>
         </div>
       </footer>
@@ -66,6 +79,7 @@
         const jishoEnabled = false;
         const URLs = {"jotoba.de": ["https://jotoba.de/search/1/", "l=en-US"], "jisho.org": ["https://jisho.org/search/", " #kanji"]}
         const dictSelect = document.getElementById("dictSelect");
+        let currentPivot;
 
         async function loadData(fileName) {
             const response = await fetch(fileName);
@@ -75,6 +89,7 @@
 
             const triangular = data.nearest == null;
             var inverted = data.inverted ? true : false;
+
             const scale = data.scaleBy;
             if (triangular) {
                 for (let i = 0; i < data.characters.length; i++) {
@@ -127,8 +142,7 @@
             const height = 600;
 
             // Basic SVG setup
-            const svg = d3.select("#scatterplot-container")
-                .append("svg")
+            const svg = d3.select("#kanjiplot")
                 .attr("width", width)
                 .attr("height", height);
 
@@ -142,6 +156,7 @@
 
             // Function to calculate positions based on a pivot point
             function updatePositions(pivotPoint) {
+                currentPivot = pivotPoint;
                 var selected;
                 var distances;
 
@@ -254,7 +269,6 @@
                 pivotPoint.y = height/2;
 
                 updatePlot(display, linkData);
-                
             }
 
             function updatePlot(pointData, linkData) {
@@ -294,7 +308,7 @@
                     .each(function(d) { // Log values before starting the transition: These are the values where the edges *go*
                                         // (source and target are the ordered endpoints of the edges,
                                         // has nothing to do with source and target of the transition)
-                        console.log(`Edges after transition: id ${d.id}, source (${d.source.x}, ${d.source.y}), target (${d.target.x}, ${d.target.y})`);
+                        // console.log(`Edges after transition: id ${d.id}, source (${d.source.x}, ${d.source.y}), target (${d.target.x}, ${d.target.y})`);
                     })
                     .transition()
                     .duration(1000)
@@ -306,7 +320,7 @@
                     .duration(500)
                     .attr("opacity", 1);
 
-                    console.log(`eol`);
+                    // console.log(`eol`);
     
                 const enteringCircles = circles.enter()
                     .append("circle")
@@ -353,12 +367,32 @@
             }
 
             // Initial Setup
-            let currentPivot = stateInfo[Math.floor(Math.random() * stateInfo.length)];
+            if (currentPivot == undefined) {
+                currentPivot = stateInfo[Math.floor(Math.random() * stateInfo.length)];
+            } else {
+                console.log(currentPivot);
+                currentPivot = stateInfo.find(d => d.name == currentPivot.name);
+            }
             document.getElementById("knum").innerHTML = stateInfo.length;
+            document.getElementById("navigateButton").onclick = function() {
+                try {
+                    const ch = document.getElementById('navigateChar').value;
+                    updatePositions(stateInfo.find(d => d.name == ch));
+                } catch(e) {
+                    alert("Sorry! That character is not included in the distance data.")
+                    console.error(e)
+                }
+                
+            };
+            document.getElementById("randomButton").onclick = function() {updatePositions(stateInfo[Math.floor(Math.random() * stateInfo.length)]);};
             updatePositions(currentPivot);
         }
 
-        loadData('data/dstrokedit.json');
+        updatePositions = loadData('data/dstrokedit.json');
+        document.getElementById("datasetSelection").onchange = function() {
+            loadData("data/" + document.getElementById("datasetSelection").value);
+        }
+        
     </script>
 </body>
 </html>
