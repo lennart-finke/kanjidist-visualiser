@@ -29,27 +29,34 @@
                 </div>
                 <div class="columns is-centered">
                     <div class="column is-half">
-                        <h5 class="subtitle is-h5">
+                        <b>
                             What is this? 🗺️
-                        </h5>
+                        </b>
                         <p>It's an interactive way to arrange <span id="knum"></span> of the most common Japanese ideographic characters, called kanji, and highlight their structure. At the center, we can see the kanji we are focusing on. On the periphery, we can see its closest neighbors at a certain distance reflecting the similarity between them and the centered kanji. The peripheral kanji are also arranged roughly by how similar they are amongst themselves, with strong similarity being indicated by thicker lines. </p>
                         <div id="kanji-container" class="column is-narrow">
                             <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
                        </div>
                     </div>
                     <div class="column is-half">
-                        <b> Controls</b>
+                        <b class=" is-h5">Controls</b>
+                        <ul>
+                            <li><p>
+                                Select a Distance Map:
+                                <select name="Dataset Selection" id="datasetSelection">
+                                    <option value="dstrokedit.json">Stroke Edit Distance</option>
+                                    <option value="dbagofradicals.json">Bag-of-Radicals Distance</option>
+                                    
+                                </select>
+                            </p></li>
+
+                        </ul>
+                        
+                        
                         <p>
                             <button id="randomButton" class="button">Jump to a Random Kanji!</button>
-                        <button id="navigateButton" class="button">Jump to the kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
+                            <button id="navigateButton" class="button">Jump to the kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
                         </p>
-                        <p>
-                            Select a Map:
-                            <select name="Dataset Selection" id="datasetSelection">
-                                <option value="dstrokedit.json">Stroke Edit Distance</option>
-                                <option value="dbagofradicals.json">Bag-of-Radicals Distance</option>
-                            </select>
-                        </p>
+                        
                         <p>Show kanji info from 
                             <select name="Dictionary" id="dictSelect">
                             <option value="jisho.org">jisho.org</option>
@@ -138,13 +145,22 @@
             //     return sortedPair[0] + "-" + sortedPair[1];
             // }
 
-            const width = 520;
-            const height = 600;
+            const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
             // Basic SVG setup
             const svg = d3.select("#kanjiplot")
-                .attr("width", width)
-                .attr("height", height);
+            .attr("viewBox", [0, 0, width, height])
+            .attr("width", "100%")
+            .attr("height", "auto");
+            
+            window.onresize = function () {
+                width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+                height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+                svg.attr("viewBox", [0, 0, width, height])
+                    .attr("width", width)
+                    .attr("height", height);
+            }
 
             // Scales for positioning
             const xScale = d3.scaleLinear()
