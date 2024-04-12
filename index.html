@@ -22,7 +22,7 @@
             <h1 class="title">The Jōyō Kanji Map | 地図で分かる常用漢字  </h1>
 
             <div class="box">
-                <div  class="columns is-centered">
+                <div  class="columns is-centered" id="kanjiplotFullwidth">
                     <div id="kanjiplot-container column">
                         <svg id="kanjiplot"></svg>
                     </div>
@@ -83,9 +83,11 @@
     
     <script>
         const NUM_NEIGHBORS = 10;
+        const MAX_WIDTH = 600;
         const jishoEnabled = false;
         const URLs = {"jotoba.de": ["https://jotoba.de/search/1/", "l=en-US"], "jisho.org": ["https://jisho.org/search/", " #kanji"]}
         const dictSelect = document.getElementById("dictSelect");
+        const kanjiplotFullwidth = document.getElementById("kanjiplotFullwidth");
         let currentPivot;
 
         async function loadData(fileName) {
@@ -144,22 +146,37 @@
             //     let sortedPair = [k1.name, k2.name].sort();
             //     return sortedPair[0] + "-" + sortedPair[1];
             // }
-
-            const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-            const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+            
+            var width;
+            var height;
 
             // Basic SVG setup
-            const svg = d3.select("#kanjiplot")
-            .attr("viewBox", [0, 0, width, height])
-            .attr("width", "100%")
-            .attr("height", "auto");
+            const svg = d3.select("#kanjiplot");
+
+            function resize() {
+                width = Math.min(MAX_WIDTH, kanjiplotFullwidth.getBoundingClientRect().width);
+                height = width;
+                svg.attr("viewBox", [0, 0, width, width])
+                    .attr("width", width)
+                    .attr("height", width);
+            }
+            resize();
             
             window.onresize = function () {
-                width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-                height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-                svg.attr("viewBox", [0, 0, width, height])
-                    .attr("width", width)
-                    .attr("height", height);
+                const prevWidth = width;
+                const prevHeight = height;
+                resize();
+                rescale(prevWidth, prevHeight);
+            }
+
+            function rescale(pW, pH) {
+                for (var i = 0; i < pd.length; i++) {
+                    var point = pd[i];
+                    point.x *= width / pW; // We incrementally scale with each resized "frame"
+                    point.y *= height / pH;
+                    pd[i] = point;
+                }
+                updatePlot(pd, ld);
             }
 
             // Scales for positioning
@@ -169,7 +186,9 @@
             const yScale = d3.scaleLinear()
                 .domain([-height / 2, height / 2])
                 .range([-height/2, height/2]);
-
+            
+            var pd; // Variables for point and link data to use for rescaling
+            var ld;
             // Function to calculate positions based on a pivot point
             function updatePositions(pivotPoint) {
                 currentPivot = pivotPoint;
@@ -190,7 +209,6 @@
                 document.getElementById("jisho-frame").style.display = showDictionary ? "inline" : "none";
                 if (showDictionary) { // Displaying additional information in an iframe
                     var hyperlink = URLs[dictSelect.value][0] + encodeURIComponent(pivotPoint.name + URLs[dictSelect.value][1]);
-                    console.log(hyperlink)
                     document.getElementById("jisho-frame").src = hyperlink;
                 }
 
@@ -285,6 +303,8 @@
                 pivotPoint.y = height/2;
 
                 updatePlot(display, linkData);
+                pd = display;
+                ld = linkData;
             }
 
             function updatePlot(pointData, linkData) {
@@ -386,7 +406,6 @@
             if (currentPivot == undefined) {
                 currentPivot = stateInfo[Math.floor(Math.random() * stateInfo.length)];
             } else {
-                console.log(currentPivot);
                 currentPivot = stateInfo.find(d => d.name == currentPivot.name);
             }
             document.getElementById("knum").innerHTML = stateInfo.length;
