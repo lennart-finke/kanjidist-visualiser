@@ -13,13 +13,37 @@
             margin: 0px auto;
             border: 1px solid #fff;
         }
+
+        mark {
+            margin: 0 -0.4em;
+            padding: 0.1em 0.4em;
+            border-radius: 0.8em 0.3em;
+            background: transparent;
+            background-image: linear-gradient(
+                to right,
+                rgba(255, 225, 0, 0.1),
+                #ff7b00a1 4%,
+                rgba(209, 105, 56, 0.014) 50%
+            );
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+        }
+
+        p {
+            font-family: Caladea;
+        }
+
+        b {
+            font-family: Caladea;
+
+        }
     </style>
 </head>
 <body>
     <section class="section">
         <div class="container">
             
-            <h1 class="title">The Jōyō Kanji Map | 地図で分かる常用漢字  </h1>
+            <h1 class="title"> <mark>The Jōyō Kanji Map ・ 地図で分かる常用漢字</mark>   </h1>
 
             <div class="box">
                 <div  class="columns is-centered" id="kanjiplotFullwidth">
@@ -29,16 +53,26 @@
                 </div>
                 <div class="columns is-centered">
                     <div class="column is-half">
-                        <b>
-                            What is this? 🗺️
-                        </b>
-                        <p>It's an interactive way to arrange <span id="knum"></span> of the most common Japanese ideographic characters, called kanji, and highlight their structure. At the center, we can see the kanji we are focusing on. On the periphery, we can see its closest neighbors at a certain distance reflecting the similarity between them and the centered kanji. The peripheral kanji are also arranged roughly by how similar they are amongst themselves, with strong similarity being indicated by thicker lines. </p>
-                        <div id="kanji-container" class="column is-narrow">
-                            <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
-                       </div>
-                    </div>
-                    <div class="column is-half">
-                        <b class=" is-h5">Controls</b>
+                        <p><b class=" is-h5">Controls:</b>
+                            Click a peripheral kanji to navigate. </p>
+                        
+                        
+                        <hr>
+                        
+                        <p>
+                            <button id="randomButton" class="button">Jump to a Random Kanji!</button>
+                            <button id="navigateButton" class="button">Jump to the Kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
+                        </p>
+                        
+                        <hr>
+
+                        <p>Show kanji info from 
+                            <select name="Dictionary" id="dictSelect">
+                            <option value="jisho.org">jisho.org</option>
+                            <option value="jotoba.de">jotoba.de</option>
+                            </select>: <input type="checkbox" id="showJisho">
+                        </p>
+                        
                         <ul>
                             <li><p>
                                 Select a Distance Map:
@@ -48,21 +82,27 @@
                                     
                                 </select>
                             </p></li>
-
                         </ul>
-                        
-                        
-                        <p>
-                            <button id="randomButton" class="button">Jump to a Random Kanji!</button>
-                            <button id="navigateButton" class="button">Jump to the kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
-                        </p>
-                        
-                        <p>Show kanji info from 
-                            <select name="Dictionary" id="dictSelect">
-                            <option value="jisho.org">jisho.org</option>
-                            <option value="jotoba.de">jotoba.de</option>
-                            </select>: <input type="checkbox" id="showJisho">
-                        </p>
+                        <hr>
+                    </div>
+                    <div class="column is-half">
+                        <b>
+                            🗺️ What is this? 
+                        </b>
+                        <p>It's an interactive way to arrange <span id="knum"></span> of the most common Japanese ideographic characters, called kanji, and highlight their structure. At the center, we can see the kanji we are focusing on. On the periphery, we can see its closest neighbors at a certain distance reflecting the similarity between them and the centered kanji. The peripheral kanji are also arranged roughly by how similar they are amongst themselves, with strong similarity being indicated by thicker lines. </p>
+                        <div id="kanji-container" class="column is-narrow">
+                            <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
+                       </div>
+
+
+                       <b>
+                        ㊗ A Distance between Kanji Characters?
+                       </b>
+
+                       <p>
+                        We intuitively understand that some kanji are more similar than others, for example а pair like (森, 林) sharing the component 木. The data visualised here takes into account the nested component structure of the kanji, including their relative position and appearance, to assign a similarity score, using a mathematical framework called Optimal Transport. <a href="https://arxiv.org/abs/2304.02493">Here</a> is our preprint detailing the method. You can also select the Bag-of-Radicals Distance by <a href="https://psycnet.apa.org/record/2002-15293-011">Yeh and Li (2002)</a> using the fraction of shared radicals and the Stroke Edit distance by <a href="https://lars.yencken.org/papers/coling-2008.pdf">Yencken and Baldwin (2008)</a> using the number of strokes to add and remove to reach one kanji from the other.
+                        We also recommend our open toolkit for computing all kinds of kanji-related things in the programming language R, available <a href="https://dschuhmacher.github.io/kanjistat/">here</a>.
+                       </p>
                     </div>
                 </div>
             </div>
@@ -72,10 +112,10 @@
       <footer class="footer">
         <div class="content has-text-centered">
           <p>
-            This website is brought to you by the <a href="http://www.stochastik.math.uni-goettingen.de/index.php?id=182&language=en">Spatial Stochastics</a> group at the <a href="https://www.uni-goettingen.de/en/1.html">University of Göttingen</a>. <br>
+            This website is brought to you by <a href="https://github.com/file-acomplaint">Lennart Finke</a> and <a href="https://dschuhm1.pages.gwdg.de/">Dominic Schuhmacher</a> from the <a href="http://www.stochastik.math.uni-goettingen.de/index.php?id=182&language=en">Spatial Stochastics</a> group at the <a href="https://www.uni-goettingen.de/en/1.html">University of Göttingen</a>.  <br>
             It uses <a href="https://github.com/d3/d3">d3.js</a>, licensed under <a href="https://www.isc.org/licenses/">ISC</a>, and <a href="https://github.com/jgthms/bulma">Bulma</a>, licensed under
-            <a href="http://opensource.org/licenses/mit-license.php">MIT</a>. 
-            The website content is licensed under <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
+            <a href="http://opensource.org/licenses/mit-license.php">MIT</a>. <br>
+            The website content is licensed under <a href="http://opensource.org/licenses/mit-license.php">MIT</a> and you can see the source code <a href="https://github.com/file-acomplaint/kanjidist-visualiser">here</a>.
           </p>
         </div>
       </footer>
@@ -233,7 +273,7 @@
                         }
                         const euclidean = Math.sqrt((coords[0] - x)**2 + (coords[1] - y)**2) 
                         out += (1.25*actual_dist - euclidean)**2 // The original focusedMDS loss
-                        if (euclidean < 250) {
+                        if (euclidean < 500) { // A penalty term for overlapping circles
                             out += 49999 / euclidean
                         }
                     }
@@ -310,11 +350,11 @@
             function updatePlot(pointData, linkData) {
                 const grayScale = d3.scaleLinear()
                 .domain([0, 1])
-                .range(["#000", "#ccc"]); // Gradient from black to light gray
+                .range(["#000", "#c74"]); // Gradient from black to warm gray
 
                 const colorScale = d3.scaleLinear()
                 .domain([0.3, 1])
-                .range(["#a40", "#fa5"]); // Gradient from red to white
+                .range(["#a40", "#fa7"]); // Gradient from red to white
 
                 svg.append("g").attr("id", "links")
                 svg.append("g").attr("id", "nodes")
@@ -374,12 +414,12 @@
                     .attr("cx", d => d.x)
                     .attr("cy", d => d.y)
                     .attr("fill", d => colorScale(2*d.distance/width))
-                    .attr("r", 15);
+                    .attr("r", 18);
                 
                 // Exiting Points
                 circles.exit().transition().duration(500).style("opacity", 0).remove();
 
-                const textLabels = svg.select("#text").selectAll("text")
+                const textLabels = svg.selectAll("text")
                     .data(pointData, d => d.name);
 
                 const enteringText = textLabels.enter()
@@ -389,7 +429,9 @@
                     .attr("dy", ".35em")
                     .on("click", updatePositions)
                     .attr("x", d => d.x)
-                    .attr("y", d => d.y);
+                    .attr("y", d => d.y)
+                    .attr("font-size", 20)
+                    .attr("font-family", "sans-serif");
                 
                 enteringText.merge(textLabels) 
                     .transition()
