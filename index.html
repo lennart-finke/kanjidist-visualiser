@@ -4,29 +4,14 @@
     <title>Kanji Distance Map</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://d3js.org/d3.v5.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <script src="lib/d3.v5.min.js"></script>
+    <link rel="stylesheet" href="lib/bulma.min.css">
 </head>
-    <script src="focused_mds.js"></script>
+    
     <style> /* Basic styling */
         #scatterplot-container {
             margin: 0px auto;
             border: 1px solid #fff;
-        }
-
-        mark {
-            margin: 0 -0.4em;
-            padding: 0.1em 0.4em;
-            border-radius: 0.8em 0.3em;
-            background: transparent;
-            background-image: linear-gradient(
-                to right,
-                rgba(255, 225, 0, 0.1),
-                #ff7b00a1 4%,
-                rgba(209, 105, 56, 0.014) 50%
-            );
-            -webkit-box-decoration-break: clone;
-            box-decoration-break: clone;
         }
 
         p {
@@ -35,7 +20,16 @@
 
         b {
             font-family: Caladea;
+        }
 
+        u {
+            display: inline-block;
+            text-decoration: none;
+            border-bottom: 10px solid orange;
+        }
+
+        .accent {
+            color: orangered;
         }
     </style>
 </head>
@@ -43,20 +37,22 @@
     <section class="section">
         <div class="container">
             
-            <h1 class="title"> <mark>The Jōyō Kanji Map ・ 地図で分かる常用漢字</mark>   </h1>
+            <h1 class="title"> <u class="spelling-error">The Jōyō Kanji Map ・ 地図で分かる常用漢字</u>   </h1>
 
             <div class="box">
                 <div  class="columns is-centered" id="kanjiplotFullwidth">
                     <div id="kanjiplot-container column">
                         <svg id="kanjiplot"></svg>
                     </div>
+                    <div id="kanji-container" class="column is-narrow">
+                        <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
+                   </div>
                 </div>
                 <div class="columns is-centered">
                     <div class="column is-half">
                         <p><b class=" is-h5">Controls:</b>
                             Click a peripheral kanji to navigate. </p>
-                        
-                        
+
                         <hr>
                         
                         <p>
@@ -87,16 +83,12 @@
                     </div>
                     <div class="column is-half">
                         <b>
-                            🗺️ What is this? 
+                            <span class="accent">&#9670;</span> What is this?
                         </b>
                         <p>It's an interactive way to arrange <span id="knum"></span> of the most common Japanese ideographic characters, called kanji, and highlight their structure. At the center, we can see the kanji we are focusing on. On the periphery, we can see its closest neighbors at a certain distance reflecting the similarity between them and the centered kanji. The peripheral kanji are also arranged roughly by how similar they are amongst themselves, with strong similarity being indicated by thicker lines. </p>
-                        <div id="kanji-container" class="column is-narrow">
-                            <iframe id="jisho-frame" src="about:blank" width="400" height="600"></iframe>
-                       </div>
-
-
+                        
                        <b>
-                        ㊗ A Distance between Kanji Characters?
+                        <span class="accent">&#9670;</span> A Distance between Kanji Characters?
                        </b>
 
                        <p>
