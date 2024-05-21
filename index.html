@@ -73,6 +73,7 @@
                             <li><p>
                                 Select a Distance Map:
                                 <select name="Dataset Selection" id="datasetSelection">
+                                    <option value="dkanjistat.json">Optimal Transport Distance</option>
                                     <option value="dstrokedit.json">Stroke Edit Distance</option>
                                     <option value="dbagofradicals.json">Bag-of-Radicals Distance</option>
                                     <option value="dembeddings.json">Embeddings Distance</option>
@@ -171,6 +172,7 @@
                 }
                 dist = inverted ? 1 - dist : dist;
                 dist *= 0.85 * scale * width;
+                
                 return dist;
             }
 
@@ -456,7 +458,7 @@
             updatePositions(currentPivot);
         }
 
-        updatePositions = loadData('data/dstrokedit.json');
+        updatePositions = loadData('data/dkanjistat.json');
         document.getElementById("datasetSelection").onchange = function() {
             loadData("data/" + document.getElementById("datasetSelection").value);
         }
