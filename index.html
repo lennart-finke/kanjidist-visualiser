@@ -130,7 +130,7 @@
             var stateInfo = [];
 
             const triangular = data.nearest == null;
-            var inverted = data.inverted ? true : false;
+            var transform = data.transform;
 
             const scale = data.scaleBy;
             if (triangular) {
@@ -170,7 +170,9 @@
                         dist = data.nearest[b][a];
                     }
                 }
-                dist = inverted ? 1 - dist : dist;
+                if (transform == "nonlinear") {
+                    dist = 1-1/(1+(dist+1/2)**10);
+                }
                 dist *= 0.85 * scale * width;
                 
                 return dist;
@@ -340,14 +342,21 @@
             }
 
             function updatePlot(pointData, linkData) {
-                const grayScale = d3.scaleLinear()
+                var grayScale = d3.scaleLinear()
                 .domain([0, 1])
                 .range(["#000", "#c74"]); // Gradient from black to warm gray
 
-                const colorScale = d3.scaleLinear()
+                var colorScale = d3.scaleLinear()
                 .domain([0.3, 1])
                 .range(["#a40", "#fa7"]); // Gradient from red to white
 
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    // The user requests dark mode
+                    grayScale = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range(["#c74", "#311"]);
+                }
+                
                 svg.append("g").attr("id", "links")
                 svg.append("g").attr("id", "nodes")
                 svg.append("g").attr("id", "text")
