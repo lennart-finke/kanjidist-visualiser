@@ -56,13 +56,13 @@
                 <div class="columns is-centered">
                     <div class="column is-half">
                         <p><b class=" is-h5">Controls:</b>
-                            Click a peripheral kanji to navigate. </p>
+                            Click a kanji to navigate.</p>
 
                         <hr>
                         
                         <p>
-                            <button id="randomButton" class="button">Jump to a Random Kanji!</button>
-                            <button id="navigateButton" class="button">Jump to the Kanji <input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar">!</button> 
+                            <button id="randomButton" class="button">Jump to a random kanji</button>
+                            <button id="navigateButton" class="button">Jump to the kanji&nbsp;<input type="text" maxlength="1" style="text-align: center;" size="1" value="漠" id="navigateChar"></button> 
                         </p>
                         
                         <hr>
@@ -76,7 +76,7 @@
                         
                         <ul>
                             <li><p>
-                                Select a Distance Map:
+                                Select a distance function:
                                 <select name="Dataset Selection" id="datasetSelection">
                                     <option value="dkanjistat.json">Component Transport Distance</option>
                                     <option value="dstrokedit.json">Stroke Edit Distance</option>
@@ -91,13 +91,13 @@
                         <b>
                             <span class="accent">&#9670;</span> What's this?
                         </b>
-                        <p>It's an interactive way of arranging <span id="knum"></span> common Japanese ideographic characters, called kanji, based on their similarities. We see a map in a given kanji distance from the point of view of a focal kanji in the center. The kanji around it are placed according to their distances from the focal kanji in a such a way that distances between peripheral kanji remain as accurate as possible. The thickness and highlight of each line always indicate the exact distance, even between peripheral kanji. Thicker lines indicate closer and hence more similar kanji. </p>
+                        <p>It's an interactive way of arranging <span id="knum"></span> common Japanese ideographic characters, called kanji, based on their similarities. We see a map based on a given kanji distance function from the point of view of a focal kanji in the center. The kanji around it are placed according to their distances from the focal kanji in such a way that distances between peripheral kanji remain as accurate as possible. The thickness and highlight of each line always indicate the exact distance, even between peripheral kanji. Thicker lines indicate closer and hence more similar kanji. </p>
                         
                        <b>
                         <span class="accent">&#9670;</span> Did you say kanji distance?
                        </b>
                        <p>
-                        We intuitively understand that some kanji are more similar than others, for example а pair like 森, 林 sharing the component 木 (twice). A kanji distance evaluates how dissimilar two kanji are based on their differences. The default <span class="highlight">Component Transport Distance</span> we use here takes into account the nested component structure of the kanji, including relative positions and exact shape of the components, using a mathematical framework called optimal transport. See <a href="https://arxiv.org/abs/2304.02493">our technical report</a> detailing the method. You can also select the <span class="highlight">Stroke Edit Distance</span> by <a href="https://lars.yencken.org/papers/coling-2008.pdf">Yencken and Baldwin (2008)</a> using the number of stroke edit operations and the <span class="highlight">Bag-of-Radicals Distance</span> by <a href="https://psycnet.apa.org/record/2002-15293-011">Yeh and Li (2002)</a> using the fraction of shared radicals. Finally, the <span class="highlight">Embeddings Distance</span> was derived by using <a href="https://platform.openai.com/docs/guides/embeddings">OpenAI's text embeddings</a> and focusses mainly on whether two kanji frequently appear in a similar context. </p>
+                        We intuitively understand that some kanji are more similar than others, for example а pair like 森, 林 sharing the component 木 (twice). A kanji distance function evaluates how dissimilar two kanji are based on their differences. The default <span class="highlight">Component Transport Distance</span> we use here takes into account the nested component structure of the kanji, including relative positions and exact shape of the components, using a mathematical framework called optimal transport. See <a href="https://arxiv.org/abs/2304.02493">our technical report</a> detailing the method. You can also select the <span class="highlight">Stroke Edit Distance</span> by <a href="https://lars.yencken.org/papers/coling-2008.pdf">Yencken and Baldwin (2008)</a> using the number of stroke edit operations and the <span class="highlight">Bag-of-Radicals Distance</span> by <a href="https://psycnet.apa.org/record/2002-15293-011">Yeh and Li (2002)</a> using the fraction of shared radicals. Last but not least, we have derived the <span class="highlight">Embeddings Distance</span> by using <a href="https://platform.openai.com/docs/guides/embeddings">OpenAI's text embeddings</a>. It focusses mainly on whether two kanji frequently appear in a similar context. </p>
 
                         <b>
                             <span class="accent">&#9670;</span> Where can I learn more?
