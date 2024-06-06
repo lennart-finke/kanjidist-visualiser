@@ -131,6 +131,7 @@
         const URLs = {"jotoba.de": ["https://jotoba.de/search/1/", "l=en-US"], "jisho.org": ["https://jisho.org/search/", " #kanji"]}
         const dictSelect = document.getElementById("dictSelect");
         const kanjiplotFullwidth = document.getElementById("kanjiplotFullwidth");
+        let datasetString = "dkanjistat.json";
         let currentPivot;
 
         async function loadData(fileName) {
@@ -181,7 +182,7 @@
                     }
                 }
                 if (transform == "nonlinear") {
-                    dist = 1-1/(1+(dist+1/2)**10);
+                    dist = 1-1/(1+(dist+1/2)**7);
                 }
                 dist *= 0.85 * scale * width;
                 
@@ -237,7 +238,9 @@
             var pd; // Variables for point and link data to use for rescaling
             var ld;
             // Function to calculate positions based on a pivot point
-            function updatePositions(pivotPoint) {
+            function updatePositions(pivotPoint, update) {
+                console.log(pivotPoint, update, pivotPoint.outer)
+                if (pivotPoint.name == currentPivot.name && pivotPoint.outer == false) {return;}
                 currentPivot = pivotPoint;
                 var selected;
                 var distances;
@@ -463,23 +466,33 @@
                 currentPivot = stateInfo.find(d => d.name == currentPivot.name);
             }
             document.getElementById("knum").innerHTML = stateInfo.length;
-            document.getElementById("navigateButton").onclick = function() {
+
+            function recenterTo(_) {
                 try {
                     const ch = document.getElementById('navigateChar').value;
                     updatePositions(stateInfo.find(d => d.name == ch));
                 } catch(e) {
                     alert("Sorry! That character is not included in the distance data.")
                     console.error(e)
-                }
-                
-            };
+                }  
+            }
+
+            document.getElementById("navigateButton").onclick = recenterTo;
+            document.getElementById('navigateChar').addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); // Prevent the default form submission if the input is in a form
+                        recenterTo(event);
+                    }
+                });
+
             document.getElementById("randomButton").onclick = function() {updatePositions(stateInfo[Math.floor(Math.random() * stateInfo.length)]);};
-            updatePositions(currentPivot);
+            updatePositions(currentPivot, true);
         }
 
-        updatePositions = loadData('data/dkanjistat.json');
+        updatePositions = loadData('data/' + datasetString);
         document.getElementById("datasetSelection").onchange = function() {
-            loadData("data/" + document.getElementById("datasetSelection").value);
+            datasetString = document.getElementById("datasetSelection").value
+            loadData("data/" + datasetString);
         }
         
     </script>
