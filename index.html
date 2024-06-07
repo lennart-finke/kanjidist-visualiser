@@ -134,6 +134,15 @@
         let datasetString = "dkanjistat.json";
         let currentPivot;
 
+        function showKanjiInfo() {
+            const showDictionary = document.getElementById("showJisho").checked;
+            document.getElementById("jisho-frame").style.display = showDictionary ? "inline" : "none";
+            if (showDictionary) { // Displaying additional information in an iframe
+                var hyperlink = URLs[dictSelect.value][0] + encodeURIComponent(currentPivot.name + URLs[dictSelect.value][1]);
+                document.getElementById("jisho-frame").src = hyperlink;
+            }
+        }
+
         async function loadData(fileName) {
             const response = await fetch(fileName);
             const data = await response.json();
@@ -239,9 +248,10 @@
             var ld;
             // Function to calculate positions based on a pivot point
             function updatePositions(pivotPoint, update) {
-                console.log(pivotPoint, update, pivotPoint.outer)
                 if (pivotPoint.name == currentPivot.name && pivotPoint.outer == false) {return;}
+
                 currentPivot = pivotPoint;
+                showKanjiInfo();
                 var selected;
                 var distances;
 
@@ -253,13 +263,6 @@
                     selected = distances.slice(0, NUM_NEIGHBORS).map(object => object.name);
                 } else {
                     selected = Object.keys(data.nearest[pivotPoint.name]);
-                }
-
-                const showDictionary = document.getElementById("showJisho").checked;
-                document.getElementById("jisho-frame").style.display = showDictionary ? "inline" : "none";
-                if (showDictionary) { // Displaying additional information in an iframe
-                    var hyperlink = URLs[dictSelect.value][0] + encodeURIComponent(pivotPoint.name + URLs[dictSelect.value][1]);
-                    document.getElementById("jisho-frame").src = hyperlink;
                 }
 
                 var j = 0;
@@ -483,8 +486,9 @@
                         event.preventDefault(); // Prevent the default form submission if the input is in a form
                         recenterTo(event);
                     }
-                });
+            });
 
+            document.getElementById("showJisho").onchange = showKanjiInfo;
             document.getElementById("randomButton").onclick = function() {updatePositions(stateInfo[Math.floor(Math.random() * stateInfo.length)]);};
             updatePositions(currentPivot, true);
         }
